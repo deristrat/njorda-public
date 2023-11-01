@@ -2,7 +2,7 @@ import os
 
 import requests
 
-NJORDA_API_SERVER = "https://api-v2.njorda-dev.com"
+NJORDA_API_SERVER = "https://api-v2.njorda-uat.se/"
 NJORDA_API_TOKEN = os.environ["NJORDA_API_TOKEN"]
 
 
