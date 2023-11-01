@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holdings collection example</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+
+<body>
+<div class="container prose mx-auto bg-slate-100 p-12 max-w-3xl min-h-screen" id="app">
+    <div>Enter API token to use demo.</div>
+    <h1 class="">Fetch holdings: {{ step }} </h1>
+    <input class="w-96" type="password" v-model="apiToken" @input="onNewToken">
+
+    <div v-if="step==='selectBank'" class="h-[900px] overflow-scroll">
+        <h2>Select bank</h2>
+        <div class="flex gap-4 flex-col">
+            <div v-for="provider in providers" class="flex items-center bg-base-100 rounded-2xl"
+                 @click="startAuth(provider.id)">
+                <img :src="provider.logo" class="w-12 h-12 m-4"/>
+                <div class="text-xl">{{ provider.name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="step==='authenticating'" class="h-[900px] overflow-scroll">
+        <h2>Authenticate</h2>
+        <iframe class="h-[700px]" :src="iFrameUrl" frameborder="0"></iframe>
+    </div>
+
+    <div v-if="step==='waiting'" class="h-[900px] overflow-scroll">
+        <h2>Waiting</h2>
+        <div>{{ lastPoll }}</div>
+    </div>
+
+    <div v-if="step==='done'" class="h-[900px] overflow-scroll">
+        <h2>Done</h2>
+        <h3>Accounts</h3>
+        <div class="flex gap-4 flex-col">
+            <div v-for="account in accountData" class="flex flex-col  bg-base-100 rounded-2xl p-4">
+                <div>{{ account.name }} - {{ account.number }}</div>
+                <div>{{ account.type }} - {{ account.investment_type }}</div>
+            </div>
+        </div>
+        <div class="btn btn-primary mt-4" @click="deleteUser">Delete User</div>
+    </div>
+
+    <div v-if="step==='deleted'" class="h-[900px] overflow-scroll">
+        <h2>All data deleted</h2>
+    </div>
+
+    <h2>Developer data</h2>
+    <pre>{{ user }}</pre>
+    <pre>{{ dataSession }}</pre>
+    <pre>{{ iFrameUrl }}</pre>
+    <pre>{{ accountData }}</pre>
+    <pre>{{ holdings }}</pre>
+    <pre>{{ apiToken }}</pre>
+</div>
+
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+    const {createApp, ref, onMounted} = Vue;
+    const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
+
+
+    const app = createApp({
+        setup() {
+            const step = ref("selectBank")
+            const providers = ref()
+            const user = ref()
+            const accountData = ref();
+            const holdings = ref()
+            const dataSession = ref()
+            const iFrameUrl = ref()
+            const lastPoll = ref()
+
+            const apiToken = ref(localStorage.getItem("njorda_api_token"))
+
+            const defaultProviders = [
+                'aba6b242-ce64-eaba-f9a5-62c1e55ab4ef', // Avanza
+                'fbeea33e-50cd-8197-51f8-73a6a452917f'  // Nordea
+            ]
+
+            async function onNewToken(token) {
+                console.log("new token", token.target.value)
+                localStorage.setItem("njorda_api_token", token.target.value)
+            }
+
+            async function fetchData(url, method = 'GET', bodyData = null) {
+                const headers = {
+                    'Authorization': `Bearer ${apiToken.value}`,
+                    'Content-Type': 'application/json'
+                };
+                const options = {method, headers};
+                if (bodyData && (method === 'POST' || method === 'PATCH')) {
+                    options.body = JSON.stringify(bodyData);
+                }
+                return (await fetch(NJORDA_API_SERVER + url, options)).json();
+            }
+
+            onMounted(async () => {
+                window.addEventListener("message", onIframeMessage, false)
+                // 1. Filter providers based on enable status
+                providers.value = (await fetchData("/v2/data/data-providers"))?.items?.filter(
+                    p => defaultProviders.includes(p.id || "") && p.status === "enabled");
+                // 2. Create an anonymous user: /v2/data/users
+                user.value = await fetchData("/v2/data/users", "POST", {})
+            })
+
+            async function startAuth(providerId) {
+                step.value = "authenticating"
+                const data = [{
+                    "id": providerId,
+                    "id_hint": "Logga in som vanligt.",
+                    "data_types": ["accounts", "investments"],
+                    // "input_username": "19580617-1137",
+                }]
+                // 3. Create a data session for the user: /v2/data/data-sessions
+                dataSession.value = await fetchData("/v2/data/data-sessions", "POST", {user_id: user.value.id})
+                iFrameUrl.value = (await fetchData("/v2/data/data-sessions/" + dataSession.value.id, "PATCH", {
+                    data_providers: data,
+                    commit: true,
+                })).url
+                // 4. Wait for operation in iframe to complete
+                setTimeout(pollCompletion, 1000)
+            }
+
+
+            function onIframeMessage(event) {
+                const data = JSON.parse(event.data)
+                if (data['event'] === 'done') {
+                    // User has completed authentication
+                    step.value = "waiting"
+                }
+            }
+
+            async function pollCompletion() {
+                // 4.a Poll data session status untill completed
+                const res = await fetchData("/v2/data/data-sessions/" + dataSession.value.id)
+                lastPoll.value = new Date().toISOString() + " " + res.state
+                if (res.state === "completed") {
+                    step.value = "done"
+                    await getData()
+                } else {
+                    setTimeout(pollCompletion, 1000)
+                }
+            }
+
+            async function getData() {
+                const userId = user.value.id;
+                // 5. Retrieve desired data, ex: /v2/data/accounts
+                accountData.value = (await fetchData(`/v2/data/accounts?user_id=${userId}`)).items
+                holdings.value = (await fetchData(`/v2/data/holdings?user_id=${userId}`))
+            }
+
+            async function deleteUser() {
+                if (!user.value.id) return
+                // 6. Delete  all data for this user
+                fetchData(`/v2/data/users/${user.value.id}`, "DELETE")
+                step.value = "deleted"
+            }
+
+            return {
+                step,
+                providers,
+                user,
+                accountData,
+                holdings,
+                dataSession,
+                iFrameUrl,
+                lastPoll,
+                startAuth,
+                deleteUser,
+                onNewToken,
+                apiToken
+            }
+        }
+    });
+    app.mount('#app');
+</script>
+
+</body>
+</html>
