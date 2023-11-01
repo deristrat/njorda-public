@@ -1,4 +1,8 @@
-import datetime
+"""
+Demo of uploading a portfolio and then calculating, market value, pnl
+and portfolio scenarios
+
+"""
 
 import api_client as njorda
 
