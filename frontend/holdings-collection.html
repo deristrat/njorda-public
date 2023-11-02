@@ -87,8 +87,9 @@
             ]
 
             async function onNewToken(token) {
-                console.log("new token", token.target.value)
                 localStorage.setItem("njorda_api_token", token.target.value)
+                apiToken.value = token.target.value
+                await loadInitialData()
             }
 
             async function fetchData(url, method = 'GET', bodyData = null) {
@@ -103,13 +104,17 @@
                 return (await fetch(NJORDA_API_SERVER + url, options)).json();
             }
 
-            onMounted(async () => {
-                window.addEventListener("message", onIframeMessage, false)
+            async function loadInitialData() {
                 // 1. Filter providers based on enable status
                 providers.value = (await fetchData("/v2/data/data-providers"))?.items?.filter(
                     p => defaultProviders.includes(p.id || "") && p.status === "enabled");
                 // 2. Create an anonymous user: /v2/data/users
                 user.value = await fetchData("/v2/data/users", "POST", {})
+            }
+
+            onMounted(async () => {
+                window.addEventListener("message", onIframeMessage, false)
+                await loadInitialData()
             })
 
             async function startAuth(providerId) {
