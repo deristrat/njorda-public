@@ -1,8 +1,11 @@
 import os
 
 import requests
+import dotenv
 
-NJORDA_API_SERVER = "https://api-v2.njorda-uat.se/"
+dotenv.load_dotenv()
+
+NJORDA_API_SERVER = os.environ["NJORDA_API_SERVER"]
 NJORDA_API_TOKEN = os.environ["NJORDA_API_TOKEN"]
 
 

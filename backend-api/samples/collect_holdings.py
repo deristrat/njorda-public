@@ -1,3 +1,5 @@
+"""Demo of collecting holdings, where we manually handle bank selection"""
+
 from time import sleep
 
 import api_client as njorda
@@ -12,18 +14,20 @@ def collect_holdings():
     # create data session
     data_session = njorda.create_data_session({"user_id": user["id"]})
 
-    # get data providers
+    # These are all providers available for the organization
     data_providers = njorda.get_data_providers()
 
-    # set data providers and commit data_session
-    providers_data = [
-        {
-            "id": "d48aed88-4795-85b6-dfb0-b0086229a165",  # Tink Demo Bank
-            "id_hint": "Demo User",
-            "data_types": ["accounts", "investments"],
-            "input_username": "19940508-7223",
-        }
-    ]
+    providers_data = []
+    for provider in data_providers['items']:
+        # Multiple providers can be selected, for test just select one
+        if provider['name'] == 'Avanza':
+            providers_data.append({
+                    "id": provider['id'],
+                    "id_hint": "Demo User",
+                    "data_types": ["accounts", "investments"],
+                    "input_username": "19940508-7223",
+            })
+
     r = njorda.commit_data_session(data_session["id"], providers_data)
     connect_iframe_url = r["url"]
     print("\nOpen this link in browser to connect your bank account:")
@@ -39,7 +43,7 @@ def collect_holdings():
         if data_session["state"] == "completed":
             break
         else:
-            sleep(10)
+            sleep(1)
 
     # get collected data
     accounts = njorda.get_user_accounts(user["id"])
