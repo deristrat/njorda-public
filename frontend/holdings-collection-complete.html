@@ -65,8 +65,7 @@
 
 <script>
     const {createApp, ref, onMounted} = Vue;
-    // const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
-    const NJORDA_API_SERVER = "https://api-v2.njorda-dev.com"
+    const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
 
 
     const app = createApp({
@@ -80,8 +79,8 @@
             const iFrameUrl = ref()
             const lastPoll = ref()
 
-            // const apiToken = ref(localStorage.getItem("njorda_api_token"))
-            const apiToken = ref("54a0b2d20f0d4f5b82a951674db")
+            const apiToken = ref(localStorage.getItem("njorda_api_token"))
+
             async function onNewToken(token) {
                 localStorage.setItem("njorda_api_token", token.target.value)
                 apiToken.value = token.target.value
