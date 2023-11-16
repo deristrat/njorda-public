@@ -9,7 +9,7 @@
 </head>
 
 <body>
-<div class="container prose mx-auto bg-slate-100 p-12 max-w-3xl min-h-screen" id="app">
+<div class="container prose mx-auto bg-slate-100 p-12 max-w-full min-h-screen" id="app">
     <div>Enter API token to use demo.</div>
     <h1 class="">Fetch holdings: {{ step }} </h1>
     <input class="w-96" type="password" v-model="apiToken" @input="onNewToken">
@@ -103,10 +103,13 @@
                 // 1. Create an anonymous user: /v2/data/users
                 user.value = await fetchData("/v2/data/users", "POST", {})
                 // 2. Start a data collection session for the user
-                dataSession.value = await fetchData("/v2/data/data-sessions", "POST", {user_id: user.value.id})
+                dataSession.value = await fetchData("/v2/data/data-sessions", "POST", {
+                    user_id: user.value.id,
+                    data_types: ["identity", "accounts", "investments"],
+                })
                 // 3. Create IFRAME URL and display to user
                 const connect_server = NJORDA_API_SERVER.replace("api-v2", "connect")
-                iFrameUrl.value = `${connect_server}/v1/connect-banks?data_session=${dataSession.value.id}&data_types=accounts,investments`
+                iFrameUrl.value = `${connect_server}/v1/connect-banks?data_session=${dataSession.value.id}`
                 step.value = "authenticating"
 
                 // 5. Wait for operation in iframe to complete
