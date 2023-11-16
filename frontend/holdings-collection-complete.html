@@ -101,13 +101,16 @@
 
             async function loadInitialData() {
                 // 1. Create an anonymous user: /v2/data/users
+
                 user.value = await fetchData("/v2/data/users", "POST", {})
+
                 // 2. Start a data collection session for the user
                 dataSession.value = await fetchData("/v2/data/data-sessions", "POST", {
                     user_id: user.value.id,
                     data_types: ["identity", "accounts", "investments"],
                 })
-                // 3. Create IFRAME URL and display to user
+
+                // 3. Create IFRAME URL and display to user, This will select banks and authenticate
                 const connect_server = NJORDA_API_SERVER.replace("api-v2", "connect")
                 iFrameUrl.value = `${connect_server}/v1/connect-banks?data_session=${dataSession.value.id}`
                 step.value = "authenticating"
@@ -133,7 +136,7 @@
             }
 
             async function pollCompletion() {
-                // 4.a Poll data session status until completed
+                // 5. Poll data session status until completed
                 const res = await fetchData("/v2/data/data-sessions/" + dataSession.value.id)
                 lastPoll.value = new Date().toISOString() + " " + res.state
                 if (res.state === "completed") {
@@ -146,14 +149,14 @@
 
             async function getData() {
                 const userId = user.value.id;
-                // 5. Retrieve desired data, ex: /v2/data/accounts
+                // 6. Retrieve desired data, ex: /v2/data/accounts
                 accountData.value = (await fetchData(`/v2/data/accounts?user_id=${userId}`)).items
                 holdings.value = (await fetchData(`/v2/data/holdings?user_id=${userId}`))
             }
 
             async function deleteUser() {
                 if (!user.value.id) return
-                // 6. Delete  all data for this user
+                // 7. (Optional) Delete  all data for this user
                 fetchData(`/v2/data/users/${user.value.id}`, "DELETE")
                 step.value = "deleted"
             }
