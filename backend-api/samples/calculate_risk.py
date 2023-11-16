@@ -1,4 +1,4 @@
-"""Sample code to calulate risk for a couple of random portfolios.
+"""Sample code to calculate risk for a couple of random portfolios.
 
 Demonstrates usage of: /v2/calculate/portfolio-scenario/positions
 
