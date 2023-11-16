@@ -66,6 +66,7 @@
 <script>
     const {createApp, ref, onMounted} = Vue;
     const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
+    const NJORDA_CONNECT_SERVER = "https://connect.njorda-uat.se"
 
 
     const app = createApp({
@@ -111,8 +112,7 @@
                 })
 
                 // 3. Create IFRAME URL and display to user, This will select banks and authenticate
-                const connect_server = NJORDA_API_SERVER.replace("api-v2", "connect")
-                iFrameUrl.value = `${connect_server}/v1/connect-banks?data_session=${dataSession.value.id}`
+                iFrameUrl.value = `${NJORDA_CONNECT_SERVER}/v1/connect-banks?data_session=${dataSession.value.id}`
                 step.value = "authenticating"
 
                 // 5. Wait for operation in iframe to complete
