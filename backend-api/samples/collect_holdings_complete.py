@@ -52,7 +52,6 @@ def collect_holdings():
             sleep(2)
 
     # 5. Get some of the collected data
-
     res = get("/v2/data/holdings/positions", params={"user_id": user['id']})
     for pos in res['data']:
         account, instrument, mv = pos['account'], pos['instrument'], pos['mv']

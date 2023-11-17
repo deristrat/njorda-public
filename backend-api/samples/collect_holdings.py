@@ -1,58 +1,77 @@
 """Demo of collecting holdings, where we manually handle bank selection"""
 
+import os
+from json import dumps
 from time import sleep
 
-import api_client as njorda
+import requests
+
+NJRODA_API_SERVER = "https://api-v2.njorda-uat.se"
+NJORDA_API_TOKEN = os.getenv("NJORDA_API_TOKEN")
+
+auth_headers = {'Authorization': 'Bearer ' + NJORDA_API_TOKEN}
+auth_json_headers = {'Content-Type': 'application/json', **auth_headers}
+
+
+def get(url, params=None):
+    return requests.get(NJRODA_API_SERVER + url, headers=auth_headers, params=params).json()
+
+
+def post(url, data):
+    return requests.post(NJRODA_API_SERVER + url, headers=auth_json_headers, data=dumps(data)).json()
+
+
+def patch(url, data):
+    return requests.patch(NJRODA_API_SERVER + url, headers=auth_json_headers, data=dumps(data)).json()
 
 
 def collect_holdings():
-    user_data = {}
-    # you can pass personal_number to prefill username if connect iframe
-    # user_data = {"personal_number": "19940508-7223"}
-    user = njorda.create_user(user_data)
+    # 1. Create user object
+    user = post("/v2/data/users", data={
+        # Optionally pass person nbr: "personal_number": "19940508-7223"
 
-    # create data session
-    data_session = njorda.create_data_session({"user_id": user["id"]})
+    })
 
-    # These are all providers available for the organization
-    data_providers = njorda.get_data_providers()
+    # 2. Create data session
+    data_session = post("/v2/data/data-sessions", data={
+        "user_id": user["id"],
+        "data_types": ["identity", "accounts", "investments"],
+    })
 
+    # 3. These are all providers available for the organization, pick one to test
+    #    normally user would be presented with a list of providers to choose from
+    data_providers = get("/v2/data/data-providers")
     providers_data = []
     for provider in data_providers['items']:
-        # Multiple providers can be selected, for test just select one
+        print(f"Provider: {provider}")
         if provider['name'] == 'Avanza':
-            providers_data.append({
-                    "id": provider['id'],
-                    "id_hint": "Demo User",
-                    "data_types": ["accounts", "investments"],
-                    "input_username": "19940508-7223",
-            })
+            providers_data.append(provider['id'])
 
-    r = njorda.commit_data_session(data_session["id"], providers_data)
+    print(f"Providers data: {providers_data}")
+    r = patch(f"/v2/data/data-sessions/{data_session['id']}", {
+        "data_providers": providers_data,
+        "commit": True,
+    })
+    print(r)
     connect_iframe_url = r["url"]
     print("\nOpen this link in browser to connect your bank account:")
     print(connect_iframe_url)
 
-    # waiting for data collection to finish
+    # 4. Wait for data collection to finish
     while True:
-        data_session = njorda.get_data_session(data_session["id"])
-        print(
-            f"Waiting for data collection to complete."
-            f" Current state: {data_session['state']}"
-        )
-        if data_session["state"] == "completed":
+        data_session_info = get("/v2/data/data-sessions/" + data_session["id"])
+        state = data_session_info.get("state", "no state provided")
+        print(f"Waiting for data collection to complete. state={state}")
+        if state == "completed":
             break
         else:
-            sleep(1)
+            sleep(2)
 
-    # get collected data
-    accounts = njorda.get_user_accounts(user["id"])
-    positions = njorda.get_user_positions(user["id"])
-    print("\nCollected accounts:")
-    print(accounts)
-
-    print("\nCollected positions:")
-    print(positions)
+    # 5. Get some of the collected data
+    res = get("/v2/data/holdings/positions", params={"user_id": user['id']})
+    for pos in res['data']:
+        account, instrument, mv = pos['account'], pos['instrument'], pos['mv']
+        print(f"Account: {account['name']}, Instrument: {instrument['name']}, MV: {mv}")
 
     print("\nDone!")
 
