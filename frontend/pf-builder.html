@@ -12,7 +12,7 @@
 <div class="container prose mx-auto bg-slate-100 p-12 max-w-full min-h-screen" id="app">
     <div>Enter API token to use demo.</div>
     <h1 class="">Portfolio fetcher: {{ step }} </h1>
-    <div v-if="error" class="alert alert-error"> {{error}} </div>
+    <div v-if="error" class="alert alert-error"> {{error}}</div>
     <input class="w-96" type="password" v-model="apiToken" @input="onNewToken">
 
     <div v-if="step==='building'" class="overflow-scroll">
@@ -22,7 +22,6 @@
 
     <h2>Developer data</h2>
     <pre>{{user}}</pre>
-    <pre>{{users}}</pre>
     <pre>{{embedUrls}}</pre>
 </div>
 
@@ -31,8 +30,9 @@
 
 <script>
     const {createApp, ref, onMounted} = Vue;
-    //const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
-    const NJORDA_API_SERVER = "http://localhost:2010"
+    // const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
+    const NJORDA_API_SERVER = "https://api-v2.njorda-dev.com"
+    // const NJORDA_API_SERVER = "http://localhost:2010"
 
 
     const app = createApp({
@@ -69,24 +69,19 @@
 
                 // List useers
                 users.value = (await fetchData("/v2/data/users", "GET"))['items']
-                console.log()
                 advisors = users.value.filter(u => u['is_org_advisor'])
-                if(!advisors.length) {
+                if (!advisors.length) {
                     error.value = "No advisors found, please create one in the dashboard."
                     return
                 }
                 user.value = advisors[0]
                 const userId = advisors[0]['id']
 
-
                 // 2. Get embedding URLS
-                embedUrls.value = await fetchData(`/v2/data/data-providers`, "GET")
                 embedUrls.value = await fetchData(`/v2/data/users/${userId}/embedding-urls`, "GET")
-
+                console.log(embedUrls.value)
                 iFrameUrl.value = embedUrls.value['embed_url']
                 step.value = "building"
-                // 5. Wait for operation in iframe to complete
-                //setTimeout(pollCompletion, 1000)
             }
 
             onMounted(async () => {
@@ -94,15 +89,23 @@
                 await loadInitialData()
             })
 
-
             function onIframeMessage(event) {
                 console.log(event)
                 console.log(event.data)
-                const data = JSON.parse(event.data)
-                if (data['event'] === 'done') {
+                const baseUrl = new URL(iFrameUrl.value).origin;
+
+                if (event.origin !== baseUrl) {
+                    console.log("Ignoring, unknown origin: ", event.origin)
+                    return
+                }
+                const action = event.data['action']
+                if (action === "PROPOSAL_SAVED") {
                     console.log("Event: DONE")
+                    console.log(event.data.payload.name)
+                    console.log(event.data.payload.proposalId)
+                    // We can now notify backend that this proposal is updated and take any required action
                 } else {
-                    console.log("Unknown event: ", data)
+                    console.log("Unknown action: ", action)
                 }
             }
 
