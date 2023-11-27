@@ -11,13 +11,14 @@
 <body>
 <div class="container prose mx-auto bg-slate-100 p-12 max-w-full min-h-screen" id="app">
     <div>Enter API token to use demo.</div>
-    <h1 class="">Portfolio fetcher: {{ step }} </h1>
+    <h1 class="">Portfolio fetcher:
+        <span class="loading loading-spinner" v-if="step==='loading'"></span> {{ step }} </h1>
     <div v-if="error" class="alert alert-error"> {{error}}</div>
     <input class="w-96" type="" v-model="apiToken" @input="onNewToken">
 
     <div v-if="step==='building'" class="overflow-scroll">
         <h2>Authenticate</h2>
-        <iframe class="h-[1000px] w-[1280px]" :src="iFrameUrl" frameborder="0"></iframe>
+        <iframe class="h-[1000px] w-[1280px]" :src="iFrameUrl" ></iframe>
     </div>
 
     <h2>Developer data</h2>
@@ -65,7 +66,7 @@
                 // user.value = await fetchData("/v2/data/users", "POST", {})
 
                 // List useers
-                users.value = (await fetchData("/v2/data/users", "GET"))['items']
+                users.value = (await fetchData("/v2/data/users", "GET"))?.items
                 advisors = users.value.filter(u => u['is_org_advisor'])
                 if (!advisors.length) {
                     error.value = "No advisors found, please create one in the dashboard."
