@@ -13,7 +13,7 @@
     <div>Enter API token to use demo.</div>
     <h1 class="">Portfolio fetcher: {{ step }} </h1>
     <div v-if="error" class="alert alert-error"> {{error}}</div>
-    <input class="w-96" type="password" v-model="apiToken" @input="onNewToken">
+    <input class="w-96" type="" v-model="apiToken" @input="onNewToken">
 
     <div v-if="step==='building'" class="overflow-scroll">
         <h2>Authenticate</h2>
@@ -30,10 +30,7 @@
 
 <script>
     const {createApp, ref, onMounted} = Vue;
-    // const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
-    const NJORDA_API_SERVER = "https://api-v2.njorda-dev.com"
-    // const NJORDA_API_SERVER = "http://localhost:2010"
-
+    const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
 
     const app = createApp({
         setup() {
@@ -80,7 +77,7 @@
                 // 2. Get embedding URLS
                 embedUrls.value = await fetchData(`/v2/data/users/${userId}/embedding-urls`, "GET")
                 console.log(embedUrls.value)
-                iFrameUrl.value = embedUrls.value['embed_url']
+                iFrameUrl.value = embedUrls.value['portfolio_builder_embed_url']
                 step.value = "building"
             }
 
@@ -116,7 +113,8 @@
                 users,
                 embedUrls,
                 iFrameUrl,
-                apiToken
+                apiToken,
+                onNewToken
             }
         }
     });
