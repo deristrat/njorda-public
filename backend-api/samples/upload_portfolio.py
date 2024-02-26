@@ -9,11 +9,11 @@ import api_client as njorda
 
 def upload_portfolio():
     # create user
-    user_data = {
+    client_data = {
         "first_name": "Demo",
         "last_name": "User",
     }
-    user = njorda.create_user(user_data)
+    user = njorda.create_client(client_data)
 
     # get list of institutions
     institutions = njorda.get_institutions()

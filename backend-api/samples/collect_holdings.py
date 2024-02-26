@@ -27,14 +27,13 @@ def patch(url, data):
 
 def collect_holdings():
     # 1. Create user object
-    user = post("/v2/data/users", data={
+    client = post("/v2/data/clients", data={
         # Optionally pass person nbr: "personal_number": "19940508-7223"
-
     })
 
     # 2. Create data session
     data_session = post("/v2/data/data-sessions", data={
-        "user_id": user["id"],
+        "user_id": client["id"],
         "data_types": ["identity", "accounts", "investments"],
     })
 
@@ -68,7 +67,7 @@ def collect_holdings():
             sleep(2)
 
     # 5. Get some of the collected data
-    res = get("/v2/data/holdings/positions", params={"user_id": user['id']})
+    res = get("/v2/data/holdings/positions", params={"user_id": client['id']})
     for pos in res['data']:
         account, instrument, mv = pos['account'], pos['instrument'], pos['mv']
         print(f"Account: {account['name']}, Instrument: {instrument['name']}, MV: {mv}")

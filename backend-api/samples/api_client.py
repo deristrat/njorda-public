@@ -20,6 +20,14 @@ def create_user(user_data: dict) -> dict:
     ).json()
 
 
+def create_client(client_data: dict) -> dict:
+    return requests.post(
+        url=f"{NJORDA_API_SERVER}/v2/data/clients",
+        headers=AUTH_HEADERS,
+        json=client_data,
+    ).json()
+
+
 def get_data_providers() -> dict:
     return requests.get(
         url=f"{NJORDA_API_SERVER}/v2/data/data-providers",
