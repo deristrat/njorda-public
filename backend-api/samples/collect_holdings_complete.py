@@ -30,7 +30,7 @@ def collect_holdings():
     # 2. Create data session
     data_session = post("/v2/data/data-sessions", data={
         "user_id": client["id"],
-        "data_types": ["identity", "accounts", "investments"],
+        "data_types": ["identity", "loans", "investments"],
     })
 
     print(f"\nCreated data session: {data_session}")
