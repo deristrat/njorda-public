@@ -9,9 +9,13 @@ import random
 from typing import TypedDict, List
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 NJORDA_API_TOKEN = os.environ["NJORDA_API_TOKEN"]
-NJORDA_API_SERVER = "https://api-v2.njorda-uat.se/"
+NJORDA_API_SERVER = os.environ["NJORDA_API_SERVER"]
 
 # use global session to avoid, reconnecting for each request
 session = requests.Session()
@@ -49,7 +53,7 @@ instruments = [
     ["SE0008992069", "Cliens Småbolag"],
 ]
 
-Position = TypedDict("Position", {"isin": str, "quantity": float})
+Position = TypedDict("Position", {"ticker": str, "quantity": float})
 
 
 def calc_risk(positions: List[Position]) -> dict:
@@ -65,7 +69,7 @@ def calc_risk(positions: List[Position]) -> dict:
 
 def calc_random_portfolio(num_positions: int):
     selected_instruments = random.sample(instruments, num_positions)
-    positions = [{'isin': ins[0], 'quantity': random.randint(10, 20)} for ins in
+    positions = [{'ticker': ins[0], 'quantity': random.randint(10, 20)} for ins in
                  selected_instruments]
     return calc_risk(positions)
 

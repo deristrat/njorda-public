@@ -10,6 +10,6 @@ This directory contains samples for the Njorda API.
 
 
 ## Usage
-1. Set `NJORDA_API_TOKEN` env var.
+1. Set `NJORDA_API_TOKEN` & `NJORDA_API_SERVER` env var.
 2. Run sample script:
- - `python upload_portfolio.py`
+ - `python calculate_risk.py`
