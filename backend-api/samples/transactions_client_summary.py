@@ -160,18 +160,6 @@ def get_client_summary(client_id):
     return res.json()
 
 
-def get_account_summary(account_id):
-    """
-    API call to get summary of a client (risk_report, summary_report, positions_report, loans_summary,
-    accounts_summary, allocations_report, risk_scenarios_report, pnl_report).
-    """
-    res = session.get(
-        url=f"{NJORDA_API_SERVER}/v2/data/accounts/{account_id}/summary?end_date=2024-06-12&start_date=2024-01-01",
-        headers=get_auth_headers(),
-    )
-    return res.json()
-
-
 def main():
     print(f" Server: {NJORDA_API_SERVER}")
     client = create_client()
