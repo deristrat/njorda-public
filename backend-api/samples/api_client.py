@@ -2,7 +2,6 @@ import os
 
 import requests
 import dotenv
-
 dotenv.load_dotenv()
 
 NJORDA_API_SERVER = os.environ["NJORDA_API_SERVER"]

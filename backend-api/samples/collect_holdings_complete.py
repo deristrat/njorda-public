@@ -4,21 +4,25 @@ from json import dumps
 from time import sleep
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 NJORDA_API_SERVER = "https://api-v2.njorda-uat.se/"
 NJORDA_API_TOKEN = os.getenv("NJORDA_API_TOKEN")
-
+print(NJORDA_API_TOKEN)
 auth_headers = {'Authorization': 'Bearer ' + NJORDA_API_TOKEN}
 auth_json_headers = {'Content-Type': 'application/json', **auth_headers}
 
 
 def get(url, params=None):
-    return requests.get(NJORDA_API_SERVER + url, headers=auth_headers, params=params).json()
+    return requests.get(NJORDA_API_SERVER + url, headers=auth_headers,
+                        params=params).json()
 
 
 def post(url, data):
-    return requests.post(NJORDA_API_SERVER + url, headers=auth_json_headers, data=dumps(data)).json()
-
+    return requests.post(NJORDA_API_SERVER + url, headers=auth_json_headers,
+                         data=dumps(data)).json()
 
 
 def collect_holdings():
