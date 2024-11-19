@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Builder Embed</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+
+<body>
+<div class="container prose mx-auto bg-slate-100 p-12 max-w-full min-h-screen" id="app">
+    <div>Enter API token to use demo.</div>
+    <h1 class="">Portfolio builder:
+        <span class="loading loading-spinner" v-if="step==='loading'"></span> {{ step }} </h1>
+    <div v-if="error" class="alert alert-error"> {{error}}</div>
+    <div>
+      API Token: <input class="w-96" type="" v-model="apiToken" @input="onNewToken">
+    </div>
+    <div class="mt-4">
+      Proposal Id(s): <input class="w-96" type="" v-model="proposalId" @input="onNewProposalId">
+    </div>
+
+    <div v-if="step==='building'" class="overflow-scroll">
+        <h2>Authenticate</h2>
+        <iframe class="h-[1000px] w-[1280px]" :src="iFrameUrl" ></iframe>
+    </div>
+
+    <h2>Developer data</h2>
+    <pre>{{user}}</pre>
+    <pre>{{embedUrls}}</pre>
+</div>
+
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+    const {createApp, ref, onMounted} = Vue;
+    const NJORDA_API_SERVER = "https://api-v2.njorda-uat.se"
+
+    const app = createApp({
+        setup() {
+            const step = ref("")
+            const user = ref()
+            const users = ref()
+            const error = ref()
+            const embedUrls = ref()
+            const iFrameUrl = ref()
+            const apiToken = ref(localStorage.getItem("njorda_api_token"))
+            const proposalId = ref(localStorage.getItem("njorda_proposal_id"))
+
+            async function onNewToken(token) {
+                localStorage.setItem("njorda_api_token", token.target.value)
+                apiToken.value = token.target.value
+                step.value = "loading"
+                await loadInitialData()
+            }
+
+            async function onNewProposalId(ev) {
+              localStorage.setItem("njorda_proposal_id", ev.target.value)
+              proposalId.value = ev.target.value
+              console.log(">>>apiToken", apiToken.value)
+              if (!apiToken.value) {
+                return
+              }
+              step.value = "loading"
+              await loadInitialData()
+            }
+
+            async function fetchData(url, method = 'GET', bodyData = null) {
+                const headers = {
+                    'Authorization': `Bearer ${apiToken.value}`,
+                    'Content-Type': 'application/json'
+                };
+                const options = {method, headers};
+                if (bodyData && (method === 'POST' || method === 'PATCH')) {
+                    options.body = JSON.stringify(bodyData);
+                }
+                return (await fetch(NJORDA_API_SERVER + url, options)).json();
+            }
+
+            async function loadInitialData() {
+                // 1. Create an anonymous user for demo, normally would get an existing one.
+                // user.value = await fetchData("/v2/data/users", "POST", {})
+
+                // List useers
+                users.value = (await fetchData("/v2/data/users", "GET"))?.items
+                advisors = users.value.filter(u => u['is_org_advisor'])
+                if (!advisors.length) {
+                    error.value = "No advisors found, please create one in the dashboard."
+                    return
+                }
+                user.value = advisors[0]
+                const userId = advisors[0]['id']
+
+                // 2. Get embedding URLS
+                embedUrls.value = await fetchData(`/v2/data/users/${userId}/embedding-urls`, "GET")
+                console.log(embedUrls.value)
+                iFrameUrl.value = embedUrls.value['portfolio_builder_embed_url']
+                if (proposalId.value) {
+                  iFrameUrl.value = `${iFrameUrl.value}&proposal_id=${proposalId.value}`
+                }
+                step.value = "building"
+            }
+
+            onMounted(async () => {
+                window.addEventListener("message", onIframeMessage, false)
+                await loadInitialData()
+            })
+
+            function onIframeMessage(event) {
+                console.log(event)
+                console.log(event.data)
+                const baseUrl = new URL(iFrameUrl.value).origin;
+
+                if (event.origin !== baseUrl) {
+                    console.log("Ignoring, unknown origin: ", event.origin)
+                    return
+                }
+                const action = event.data['action']
+                if (action === "PROPOSAL_SAVED") {
+                    console.log("Event: DONE")
+                    console.log(event.data.payload.name)
+                    console.log(event.data.payload.proposalId)
+                    // We can now notify backend that this proposal is updated and take any required action
+                } else {
+                    console.log("Unknown action: ", action)
+                }
+            }
+
+            return {
+                step,
+                error,
+                user,
+                users,
+                embedUrls,
+                iFrameUrl,
+                apiToken,
+                proposalId,
+                onNewToken,
+                onNewProposalId,
+            }
+        }
+    });
+    app.mount('#app');
+</script>
+
+</body>
+</html>
