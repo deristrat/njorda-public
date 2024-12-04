@@ -80,10 +80,11 @@
             }
 
             async function loadInitialData() {
-                // 1. Create an anonymous user for demo, normally would get an existing one.
+                // 1. Create an anonymous user for demo, normally would get an existing one. (uncomment next line for this)
                 // user.value = await fetchData("/v2/data/users", "POST", {})
 
-                // List useers
+                // or get advisor from organizations users list
+                // List users
                 users.value = (await fetchData("/v2/data/users", "GET"))?.items
                 advisors = users.value.filter(u => u['is_org_advisor'])
                 if (!advisors.length) {
