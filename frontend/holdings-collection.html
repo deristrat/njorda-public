@@ -137,7 +137,7 @@
 
 
             function onIframeMessage(event) {
-                const data = JSON.parse(event.data)
+                const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
                 if (data['event'] === 'done') {
                     // User has completed authentication
                     step.value = "waiting"
