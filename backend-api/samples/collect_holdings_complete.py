@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-NJORDA_API_SERVER = "https://api-v2.njorda-uat.se/"
+NJORDA_API_SERVER = os.getenv("NJORDA_API_SERVER")
 NJORDA_API_TOKEN = os.getenv("NJORDA_API_TOKEN")
 print(NJORDA_API_TOKEN)
 auth_headers = {'Authorization': 'Bearer ' + NJORDA_API_TOKEN}
