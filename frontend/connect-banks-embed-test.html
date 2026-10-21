@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+  A partner page for testing the holdings collection widget when it is framed by another site,
+  as a partner frames it on its own pages. It logs every message the widget posts to its parent.
+
+  Open it with the widget URL you were given:
+    <this page>?url=<widget URL>
+  or paste the widget URL into the field at the top.
+
+  The iframe carries no sandbox attribute: BankID inside the bank's sign-in page needs popups
+  and top-level navigation.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collection widget embed test</title>
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #f4f4f2; color: #1b1b1b; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #fff; border-bottom: 1px solid #ddd; }
+  header input[type=url] { flex: 1 1 420px; min-width: 0; padding: 6px 8px; font: inherit; }
+  header button, header select { padding: 6px 10px; font: inherit; }
+  main { display: grid; grid-template-columns: auto minmax(280px, 1fr); gap: 16px; padding: 16px; align-items: start; }
+  #frame-box { background: #fff; border: 1px solid #ccc; }
+  iframe { display: block; border: 0; height: 760px; }
+  #log { background: #111; color: #e6e6e6; font: 12px ui-monospace, Menlo, monospace; padding: 10px; height: 740px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+  .done { color: #7ee08a; } .close { color: #f2c46d; } .other { color: #9ab; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <input id="url" type="url" placeholder="https://…/embed/connect-banks?data_session=…&amp;language=sv" aria-label="Widget URL">
+  <select id="width" aria-label="Frame width">
+    <option value="390">390 px (phone)</option>
+    <option value="768">768 px</option>
+    <option value="1024">1024 px</option>
+  </select>
+  <button id="load">Load</button>
+  <button id="unload">Remove frame</button>
+  <button id="clear">Clear log</button>
+</header>
+<main>
+  <div id="frame-box"></div>
+  <div id="log" aria-live="polite"></div>
+</main>
+<script>
+  const box = document.getElementById("frame-box");
+  const log = document.getElementById("log");
+  const urlInput = document.getElementById("url");
+  const width = document.getElementById("width");
+
+  function line(text, cls) {
+    const el = document.createElement("div");
+    el.className = cls || "";
+    el.textContent = `${new Date().toISOString().slice(11, 23)}  ${text}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function load() {
+    const url = urlInput.value.trim();
+    if (!url) return;
+    box.innerHTML = "";
+    const frame = document.createElement("iframe");
+    frame.src = url;
+    frame.width = width.value;
+    frame.title = "Collection widget";
+    frame.addEventListener("load", () => line(`iframe load event (${frame.width} px)`, "other"));
+    box.appendChild(frame);
+    line(`loading ${new URL(url).origin}${new URL(url).pathname}`, "other");
+  }
+
+  // The widget posts JSON.stringify({event: "done"|"close"}) as a string to its parent.
+  window.addEventListener("message", (e) => {
+    const raw = typeof e.data === "string" ? e.data : JSON.stringify(e.data);
+    let cls = "other";
+    let note = typeof e.data === "string" ? "string" : `NOT a string (${typeof e.data})`;
+    try {
+      const parsed = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+      if (parsed && parsed.event === "done") cls = "done";
+      if (parsed && parsed.event === "close") cls = "close";
+    } catch {
+      note += ", not JSON";
+    }
+    line(`message from ${e.origin} [${note}]: ${raw}`, cls);
+  });
+
+  document.getElementById("load").addEventListener("click", load);
+  document.getElementById("unload").addEventListener("click", () => { box.innerHTML = ""; line("frame removed", "other"); });
+  document.getElementById("clear").addEventListener("click", () => { log.textContent = ""; });
+  width.addEventListener("change", () => { const f = box.querySelector("iframe"); if (f) f.width = width.value; });
+
+  const initial = new URLSearchParams(location.search).get("url");
+  if (initial) { urlInput.value = initial; load(); }
+  line(`harness origin ${location.origin}`, "other");
+</script>
+</body>
+</html>
